@@ -36,6 +36,27 @@ export function Board({ projectId }: { projectId?: string }) {
 
   const activeTask = tasks.find((t) => t.id === activeId) ?? null;
 
+  if (tasks.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">🤖</div>
+        <h2>No tasks yet</h2>
+        <p className="dim">
+          dum-e is ready. Create your first task, or let an agent claim work from the queue.
+        </p>
+        <button
+          className="primary"
+          onClick={() => window.dispatchEvent(new CustomEvent('dume:new-task'))}
+        >
+          New task
+        </button>
+        <p className="dim empty-hint">
+          Or from the terminal: <code>dum-e task add "Fix login" --priority high</code>
+        </p>
+      </div>
+    );
+  }
+
   function onDragStart(e: DragStartEvent) {
     setActiveId(String(e.active.id));
   }

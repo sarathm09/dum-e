@@ -42,6 +42,14 @@ function useInvalidate() {
   };
 }
 
+export function useCreateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; key?: string; repo?: string }) => api.createProject(body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+}
+
 export function useCreateTask() {
   const invalidate = useInvalidate();
   return useMutation({

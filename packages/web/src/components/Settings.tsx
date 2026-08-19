@@ -2,8 +2,25 @@ import { useConfig } from '../hooks/queries';
 import { configPathHint } from '../ui';
 
 export function Settings() {
-  const { data: config } = useConfig();
-  if (!config) return <div className="dim" style={{ padding: 24 }}>Loading config…</div>;
+  const { data: config, isLoading, error } = useConfig();
+
+  if (isLoading) return <div className="dim" style={{ padding: 24 }}>Loading config…</div>;
+  if (error || !config)
+    return (
+      <div className="settings">
+        <h3>Settings unavailable</h3>
+        <p className="dim">
+          Could not load config: {error instanceof Error ? error.message : 'unknown error'}.
+        </p>
+        <p className="dim">
+          Check the server is up to date (rebuild with <code>pnpm build</code>) and that{' '}
+          <code>{configPathHint}</code> exists (<code>dum-e init</code>).
+        </p>
+      </div>
+    );
+
+  const agents = config.agents ?? [];
+  const models = config.models ?? [];
 
   return (
     <div className="settings">
@@ -24,7 +41,7 @@ export function Settings() {
             </tr>
           </thead>
           <tbody>
-            {config.agents.map((a) => (
+            {agents.map((a) => (
               <tr key={a.id}>
                 <td>
                   {a.name}
@@ -50,7 +67,7 @@ export function Settings() {
             </tr>
           </thead>
           <tbody>
-            {config.models.map((m) => (
+            {models.map((m) => (
               <tr key={m.id}>
                 <td>
                   {m.name}

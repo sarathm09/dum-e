@@ -14,9 +14,9 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* gradient canvas (applied on body) */
-  --grad-a: #1b2036;
-  --grad-b: #241a2e;
+  /* gradient canvas (applied on body) — neutral cool slate, no purple */
+  --grad-a: #1a2030;
+  --grad-b: #12151d;
   --grad-base-1: #0c0e14;
   --grad-base-2: #0e1119;
   --noise-opacity: 0.05;
@@ -64,10 +64,10 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --grad-a: #eef1fb;
-  --grad-b: #f6eefb;
-  --grad-base-1: #eceef5;
-  --grad-base-2: #f2f0f6;
+  --grad-a: #eef1f7;
+  --grad-b: #e7ebf3;
+  --grad-base-1: #eceef4;
+  --grad-base-2: #f2f4f8;
   --noise-opacity: 0.045;
 
   --surface: #ffffff;
@@ -201,6 +201,16 @@ select:focus {
   padding: 14px 22px;
   background: transparent;
   border: none;
+}
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.logo-img {
+  width: 26px;
+  height: 26px;
+  display: block;
 }
 .brand,
 .logo {
@@ -411,6 +421,34 @@ select:focus {
 }
 .modal h3 {
   margin-top: 0;
+  margin-bottom: 16px;
+}
+
+/* labeled form fields (modal) */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.field-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ==========================================================================
@@ -517,6 +555,35 @@ table.task-table tr.clickable:hover td {
   height: 100%;
   overflow: auto;
   max-width: 900px;
+}
+
+/* ---- empty state ---- */
+.empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 40px;
+}
+.empty-state h2 {
+  margin: 0;
+}
+.empty-state p {
+  margin: 0;
+  max-width: 420px;
+}
+.empty-state .empty-hint {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.empty-icon {
+  font-size: 48px;
+  line-height: 1;
+  opacity: 0.9;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.4));
 }
 
 /* ---- misc ---- */

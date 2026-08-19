@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useClaimNext, useProjects } from '../hooks/queries';
@@ -22,11 +22,21 @@ export function Layout() {
   useHotkeys('g+s', () => void navigate({ to: '/settings' }));
   useHotkeys('escape', () => setShowNew(false));
 
+  // Empty-state CTA (and any other surface) can request the new-task modal.
+  useEffect(() => {
+    const open = () => setShowNew(true);
+    window.addEventListener('dume:new-task', open);
+    return () => window.removeEventListener('dume:new-task', open);
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="row" style={{ gap: 14, alignItems: 'center' }}>
-          <span className="logo">dum-e</span>
+          <span className="brand-mark">
+            <img src="/logo.svg" alt="" className="logo-img" />
+            <span className="logo">dum-e</span>
+          </span>
           <nav className="nav">
             <Link to="/" activeProps={{ className: 'active' }} activeOptions={{ exact: true }}>
               Board
@@ -46,7 +56,10 @@ export function Layout() {
           <span className="dim" style={{ fontSize: 12 }}>
             {projects.length} project{projects.length === 1 ? '' : 's'}
           </span>
-          <button onClick={() => claimNext.mutate({ comment: 'Claimed from web UI.' })}>
+          <button
+            title="Claim the highest-priority queued task (rejections first) and move it to in_progress"
+            onClick={() => claimNext.mutate({ comment: 'Claimed from web UI.' })}
+          >
             Claim next <kbd>c</kbd>
           </button>
           <button className="primary" onClick={() => setShowNew(true)}>
