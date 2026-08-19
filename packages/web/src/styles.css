@@ -1,0 +1,548 @@
+/* ==========================================================================
+   dum-e web theme — "paper on a rough layer" (Arc-inspired)
+
+   Two elevations:
+     - bottom layer  : the gradient canvas itself. Topbar, nav, board and
+                        columns sit flat on it with no fills or borders, so
+                        there is no visible separation between them.
+     - top layer     : the actual content (task cards, panels, charts, the
+                        detail drawer, modals, buttons) floats above as
+                        "paper", with a high-depth / low-spread shadow.
+   ========================================================================== */
+
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* gradient canvas (applied on body) */
+  --grad-a: #1b2036;
+  --grad-b: #241a2e;
+  --grad-base-1: #0c0e14;
+  --grad-base-2: #0e1119;
+  --noise-opacity: 0.05;
+
+  /* raised paper surfaces */
+  --surface: #1a1f2b;
+  --surface-2: #212736;
+  --field: #10131b;
+  --edge: rgba(255, 255, 255, 0.06);
+  --edge-strong: rgba(255, 255, 255, 0.1);
+
+  --text: #e6e9ef;
+  --text-dim: #8a93a6;
+  --accent: #6d8bff;
+  --accent-ink: #0b0d12;
+  --accent-soft: rgba(109, 139, 255, 0.16);
+
+  /* radii — slightly rounded */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* shadows — prominent depth, low spread (tight, punchy) */
+  --paper: 0 14px 30px -14px rgba(0, 0, 0, 0.7), 0 5px 12px -5px rgba(0, 0, 0, 0.55),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  --paper-hover: 0 22px 42px -14px rgba(0, 0, 0, 0.78), 0 8px 18px -6px rgba(0, 0, 0, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  --paper-lg: 0 32px 64px -20px rgba(0, 0, 0, 0.75), 0 12px 28px -10px rgba(0, 0, 0, 0.6);
+  --btn: 0 4px 10px -4px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.45);
+  --btn-hover: 0 8px 16px -6px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.45);
+
+  --st-todo: #8a93a6;
+  --st-in_progress: #6d8bff;
+  --st-ai_testing: #35c4d6;
+  --st-manual_testing: #f0b429;
+  --st-deployment: #b57edc;
+  --st-completed: #35c88a;
+
+  --pr-low: #6b7280;
+  --pr-medium: #9aa4b8;
+  --pr-high: #f0b429;
+  --pr-urgent: #ff5c6c;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --grad-a: #eef1fb;
+  --grad-b: #f6eefb;
+  --grad-base-1: #eceef5;
+  --grad-base-2: #f2f0f6;
+  --noise-opacity: 0.045;
+
+  --surface: #ffffff;
+  --surface-2: #f7f8fc;
+  --field: #f0f2f8;
+  --edge: rgba(15, 20, 40, 0.08);
+  --edge-strong: rgba(15, 20, 40, 0.14);
+
+  --text: #1a1e27;
+  --text-dim: #667085;
+  --accent: #4f6bff;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(79, 107, 255, 0.14);
+
+  --paper: 0 14px 30px -14px rgba(30, 34, 60, 0.26), 0 5px 12px -5px rgba(30, 34, 60, 0.18),
+    0 1px 2px rgba(30, 34, 60, 0.1);
+  --paper-hover: 0 22px 42px -14px rgba(30, 34, 60, 0.3), 0 8px 18px -6px rgba(30, 34, 60, 0.2),
+    0 1px 2px rgba(30, 34, 60, 0.12);
+  --paper-lg: 0 32px 64px -20px rgba(30, 34, 60, 0.3), 0 12px 28px -10px rgba(30, 34, 60, 0.2);
+  --btn: 0 4px 10px -4px rgba(30, 34, 60, 0.18), 0 1px 2px rgba(30, 34, 60, 0.1);
+  --btn-hover: 0 8px 16px -6px rgba(30, 34, 60, 0.22), 0 2px 4px rgba(30, 34, 60, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(120% 120% at 0% 0%, var(--grad-a) 0%, transparent 55%),
+    radial-gradient(120% 120% at 100% 100%, var(--grad-b) 0%, transparent 50%),
+    linear-gradient(160deg, var(--grad-base-1), var(--grad-base-2));
+  background-attachment: fixed;
+}
+
+/* rough-texture noise overlay — the "rough layer" under the paper */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- buttons: raised paper chips ---- */
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--edge);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 7px 13px;
+  box-shadow: var(--btn);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease,
+    border-color 0.15s ease;
+}
+button:hover {
+  background: var(--surface-2);
+  border-color: var(--edge-strong);
+  box-shadow: var(--btn-hover);
+  transform: translateY(-1px);
+}
+button:active {
+  transform: translateY(0);
+  box-shadow: var(--btn);
+}
+button.primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+button.primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+/* ---- inputs: inset fields on paper ---- */
+input,
+textarea,
+select {
+  font: inherit;
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  width: 100%;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ==========================================================================
+   BOTTOM LAYER — flat on the canvas, no fills, no borders, no separation
+   ========================================================================== */
+.app,
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 22px;
+  background: transparent;
+  border: none;
+}
+.brand,
+.logo {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: 18px;
+}
+.logo {
+  color: var(--accent);
+}
+.brand span {
+  color: var(--accent);
+}
+.nav {
+  display: flex;
+  gap: 4px;
+}
+.nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav a:hover {
+  color: var(--text);
+}
+.nav a.active {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+.spacer {
+  flex: 1;
+}
+.content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* board + columns: flat, blend into the canvas */
+.board {
+  display: flex;
+  gap: 18px;
+  padding: 20px 22px 24px;
+  height: 100%;
+  overflow-x: auto;
+}
+.column {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  max-height: 100%;
+}
+.column-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 12px;
+  border: none;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.column-count {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+.column-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.column-body {
+  padding: 4px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.column-body.drop-active {
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  outline: 1px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   TOP LAYER — raised "paper": task cards
+   ========================================================================== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  box-shadow: var(--paper);
+  cursor: grab;
+  will-change: transform;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--paper-hover);
+}
+.card:active {
+  cursor: grabbing;
+}
+.card.dragging {
+  opacity: 0.5;
+  box-shadow: var(--paper-lg);
+  transform: translateY(-3px) scale(1.02);
+}
+.card-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+.card-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--edge);
+  color: var(--text-dim);
+}
+.badge.reject {
+  color: var(--pr-urgent);
+  border-color: var(--pr-urgent);
+}
+.pill-priority {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- drawer (raised editor) ---- */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+.drawer {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  height: calc(100% - 24px);
+  width: min(560px, 92vw);
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: var(--paper-lg);
+  z-index: 50;
+  overflow-y: auto;
+  padding: 22px;
+}
+.drawer h2 {
+  margin-top: 0;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+.section {
+  margin-top: 22px;
+}
+.comment {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--edge);
+}
+.comment .who {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+}
+.comment .when {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+/* ---- modal (raised) ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  padding: 22px;
+  width: min(440px, 92vw);
+  box-shadow: var(--paper-lg);
+}
+.modal h3 {
+  margin-top: 0;
+}
+
+/* ==========================================================================
+   Table / metrics / settings — main content on raised paper panels
+   ========================================================================== */
+.table-wrap {
+  padding: 20px 22px;
+  height: 100%;
+  overflow: auto;
+}
+table.tasks,
+table.task-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: var(--paper);
+  overflow: hidden;
+}
+table.tasks th,
+table.tasks td,
+table.task-table th,
+table.task-table td {
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--edge);
+}
+table.tasks tr:last-child td,
+table.task-table tr:last-child td {
+  border-bottom: none;
+}
+table.tasks th,
+table.task-table th {
+  color: var(--text-dim);
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+}
+table.tasks th {
+  cursor: pointer;
+}
+table.task-table th.sortable {
+  cursor: pointer;
+}
+table.tasks tr:hover td,
+table.task-table tr.clickable:hover td {
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+/* metrics */
+.metrics {
+  padding: 20px 22px;
+  height: 100%;
+  overflow: auto;
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  padding: 20px 22px;
+}
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.panel,
+.metric-card,
+.chart-box {
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: var(--paper);
+  padding: 16px;
+}
+.panel h3,
+.chart-box h3 {
+  margin: 0 0 12px;
+}
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.metric-num,
+.stat {
+  font-size: 30px;
+  font-weight: 800;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+/* settings */
+.settings {
+  padding: 20px 22px;
+  height: 100%;
+  overflow: auto;
+  max-width: 900px;
+}
+
+/* ---- misc ---- */
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dim {
+  color: var(--text-dim);
+}
+.md p:first-child {
+  margin-top: 0;
+}
+kbd {
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+code {
+  background: var(--field);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 12px;
+}

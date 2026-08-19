@@ -1,0 +1,26 @@
+{
+  "name": "dum-e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint packages",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "oxlint": "^0.15.0",
+    "prettier": "^3.4.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

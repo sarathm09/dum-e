@@ -1,0 +1,25 @@
+{
+  "name": "@dum-e/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "dum-e": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dum-e/core": "workspace:*",
+    "chalk": "^5.4.0",
+    "commander": "^12.1.0",
+    "yaml": "^2.6.0"
+  },
+  "optionalDependencies": {
+    "@dum-e/server": "workspace:*",
+    "@dum-e/mcp": "workspace:*"
+  }
+}
