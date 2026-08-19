@@ -3,10 +3,11 @@ import {
   createRoute,
   createRouter,
   Outlet,
+  useParams,
 } from '@tanstack/react-router';
 import { Layout } from './components/Layout';
 import { Board } from './components/Board';
-import { TaskTable } from './components/TaskTable';
+import { Projects } from './components/Projects';
 import { Metrics } from './components/Metrics';
 import { Settings } from './components/Settings';
 
@@ -18,17 +19,22 @@ const layoutRoute = createRoute({
   component: Layout,
 });
 
-const boardRoute = createRoute({
+const projectsRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/',
-  component: () => <Board />,
+  component: Projects,
 });
 
-const tableRoute = createRoute({
+const boardRoute = createRoute({
   getParentRoute: () => layoutRoute,
-  path: '/table',
-  component: () => <TaskTable />,
+  path: '/projects/$projectId',
+  component: ProjectBoard,
 });
+
+function ProjectBoard() {
+  const { projectId } = useParams({ from: '/layout/projects/$projectId' });
+  return <Board projectId={projectId} />;
+}
 
 const metricsRoute = createRoute({
   getParentRoute: () => layoutRoute,
@@ -43,7 +49,7 @@ const settingsRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([
-  layoutRoute.addChildren([boardRoute, tableRoute, metricsRoute, settingsRoute]),
+  layoutRoute.addChildren([projectsRoute, boardRoute, metricsRoute, settingsRoute]),
 ]);
 
 export const router = createRouter({ routeTree });

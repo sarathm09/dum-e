@@ -12,6 +12,12 @@ export interface AttachmentInput {
   data: Buffer;
 }
 
+export interface AttachmentLinkInput {
+  url: string;
+  filename?: string;
+  mime?: string | null;
+}
+
 export class AttachmentService {
   constructor(private readonly store: Store) {}
 
@@ -28,8 +34,25 @@ export class AttachmentService {
       taskId,
       filename: input.filename,
       path,
+      url: null,
       mime: input.mime ?? null,
       size: input.data.byteLength,
+      createdAt: now(),
+    };
+    return this.store.insertAttachment(attachment);
+  }
+
+  /** Record a link attachment; no bytes are stored. */
+  addLink(taskId: string, input: AttachmentLinkInput): Attachment {
+    if (!this.store.getTask(taskId)) throw new NotFoundError('task', taskId);
+    const attachment: Attachment = {
+      id: newId(),
+      taskId,
+      filename: input.filename ?? input.url,
+      path: null,
+      url: input.url,
+      mime: input.mime ?? null,
+      size: 0,
       createdAt: now(),
     };
     return this.store.insertAttachment(attachment);
@@ -38,5 +61,11 @@ export class AttachmentService {
   list(taskId: string): Attachment[] {
     if (!this.store.getTask(taskId)) throw new NotFoundError('task', taskId);
     return this.store.listAttachments(taskId);
+  }
+
+  get(attachmentId: string): Attachment {
+    const attachment = this.store.getAttachment(attachmentId);
+    if (!attachment) throw new NotFoundError('attachment', attachmentId);
+    return attachment;
   }
 }

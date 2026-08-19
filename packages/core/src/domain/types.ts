@@ -69,7 +69,8 @@ export interface Attachment {
   id: string;
   taskId: string;
   filename: string;
-  path: string;
+  path: string | null;
+  url: string | null;
   mime: string | null;
   size: number;
   createdAt: string;
@@ -90,7 +91,7 @@ export interface AgentDef {
   id: string;
   name: string;
   description?: string;
-  /** e.g. "claude-code", "codex", "opencode" — informational, not enforced. */
+  /** e.g. "claude-code", "codex", "opencode": informational, not enforced. */
   tool?: string;
 }
 

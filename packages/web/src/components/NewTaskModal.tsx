@@ -1,43 +1,55 @@
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
-import type { Priority, Project, TaskType } from '../types';
-import { useCreateProject, useCreateTask, useProjects } from '../hooks/queries';
+import type { Priority, TaskType } from '../types';
+import { useCreateTask } from '../hooks/queries';
+import { api } from '../api';
 
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
 const TYPES: TaskType[] = ['bug', 'feature', 'documentation', 'chore'];
 
-export function NewTaskModal({ onClose }: { onClose: () => void }) {
-  const { data: projects, isLoading } = useProjects();
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>New task</h3>
-        {isLoading ? (
-          <p className="dim">Loading…</p>
-        ) : (
-          // Key on the resolved project so the form re-seeds its default
-          // projectId once projects have loaded (TanStack Form reads
-          // defaultValues only at mount).
-          <NewTaskForm
-            key={projects?.[0]?.id ?? 'no-project'}
-            projects={projects ?? []}
-            onClose={onClose}
-          />
-        )}
-      </div>
-    </div>
-  );
+/** A link is valid if it is a web URL or an absolute local filesystem path. */
+function isValidLink(url: string): boolean {
+  return /^https?:\/\//i.test(url) || url.startsWith('/') || url.startsWith('~') || url.startsWith('file://');
 }
 
-function NewTaskForm({ projects, onClose }: { projects: Project[]; onClose: () => void }) {
+type Pending =
+  | { kind: 'file'; file: File; label: string }
+  | { kind: 'link'; url: string; label: string };
+
+export function NewTaskModal({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const create = useCreateTask();
-  const createProject = useCreateProject();
-  const needsProject = projects.length === 0;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<Pending[]>([]);
+  const [link, setLink] = useState('');
+
+  // Buffer attachments locally; they are uploaded once the task is created and
+  // has an id. Paste attaches clipboard images while the modal is open.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      for (const it of Array.from(e.clipboardData?.items ?? [])) {
+        if (it.kind === 'file' && it.type.startsWith('image/')) {
+          const file = it.getAsFile();
+          if (file) {
+            e.preventDefault();
+            setPending((p) => [...p, { kind: 'file', file, label: file.name || 'pasted image' }]);
+            return;
+          }
+        }
+      }
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, []);
+
+  const addLink = () => {
+    const url = link.trim();
+    if (!isValidLink(url)) return;
+    setPending((p) => [...p, { kind: 'link', url, label: url }]);
+    setLink('');
+  };
 
   const form = useForm({
     defaultValues: {
-      projectName: '',
-      projectId: projects[0]?.id ?? '',
       title: '',
       details: '',
       priority: 'medium' as Priority,
@@ -45,146 +57,163 @@ function NewTaskForm({ projects, onClose }: { projects: Project[]; onClose: () =
     },
     onSubmit: async ({ value }) => {
       if (!value.title.trim()) return;
-
-      let projectId = value.projectId;
-      if (needsProject) {
-        const name = value.projectName.trim() || 'Inbox';
-        const project = await createProject.mutateAsync({ name });
-        projectId = project.id;
-      }
-      if (!projectId) return;
-
-      await create.mutateAsync({
+      const task = await create.mutateAsync({
         projectId,
         title: value.title.trim(),
         details: value.details,
         priority: value.priority,
         type: value.type,
       });
+      // Upload buffered attachments now that the task has an id.
+      for (const item of pending) {
+        if (item.kind === 'file') await api.addAttachmentFile(task.id, item.file);
+        else await api.addAttachmentLink(task.id, { url: item.url });
+      }
       onClose();
     },
   });
 
-  const busy = create.isPending || createProject.isPending;
-
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void form.handleSubmit();
-      }}
-    >
-      {needsProject ? (
-        <label className="field">
-          <span className="field-label">Project</span>
-          <form.Field name="projectName">
-            {(field) => (
-              <input
-                placeholder="Project name (e.g. Web App)"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-            )}
-          </form.Field>
-          <span className="field-hint">No projects yet — this creates your first one.</span>
-        </label>
-      ) : (
-        <label className="field">
-          <span className="field-label">Project</span>
-          <form.Field name="projectId">
-            {(field) => (
-              <select
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              >
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.key ? `${p.key} — ${p.name}` : p.name}
-                  </option>
-                ))}
-              </select>
-            )}
-          </form.Field>
-        </label>
-      )}
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>New task</h3>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void form.handleSubmit();
+          }}
+        >
+          <label className="field">
+            <span className="field-label">Title</span>
+            <form.Field name="title">
+              {(field) => (
+                <input
+                  autoFocus
+                  placeholder="What needs doing?"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              )}
+            </form.Field>
+          </label>
 
-      <label className="field">
-        <span className="field-label">Title</span>
-        <form.Field name="title">
-          {(field) => (
-            <input
-              autoFocus
-              placeholder="What needs doing?"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          )}
-        </form.Field>
-      </label>
+          <label className="field">
+            <span className="field-label">Details</span>
+            <form.Field name="details">
+              {(field) => (
+                <textarea
+                  rows={4}
+                  placeholder="Markdown supported. You can edit this later too."
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              )}
+            </form.Field>
+          </label>
 
-      <label className="field">
-        <span className="field-label">Details</span>
-        <form.Field name="details">
-          {(field) => (
-            <textarea
-              rows={4}
-              placeholder="Markdown supported (optional)"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          )}
-        </form.Field>
-      </label>
-
-      <div className="field-grid">
-        <label className="field">
-          <span className="field-label">Priority</span>
-          <form.Field name="priority">
-            {(field) => (
-              <select
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value as Priority)}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            )}
-          </form.Field>
-        </label>
-        <label className="field">
-          <span className="field-label">Type</span>
-          <form.Field name="type">
-            {(field) => (
-              <select
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value as TaskType)}
-              >
-                {TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            )}
-          </form.Field>
-        </label>
-      </div>
-
-      <form.Subscribe selector={(s) => s.values.title}>
-        {(title) => (
-          <div className="row" style={{ justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
-            <button type="button" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="primary" disabled={busy || !title.trim()}>
-              {busy ? 'Creating…' : 'Create task'}
-            </button>
+          <div className="field-grid">
+            <label className="field">
+              <span className="field-label">Priority</span>
+              <form.Field name="priority">
+                {(field) => (
+                  <select
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value as Priority)}
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </form.Field>
+            </label>
+            <label className="field">
+              <span className="field-label">Type</span>
+              <form.Field name="type">
+                {(field) => (
+                  <select
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value as TaskType)}
+                  >
+                    {TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </form.Field>
+            </label>
           </div>
-        )}
-      </form.Subscribe>
-    </form>
+
+          <div className="field">
+            <span className="field-label">Attachments</span>
+            {pending.length > 0 && (
+              <div className="attachments" style={{ marginBottom: 8 }}>
+                {pending.map((item, i) => (
+                  <span key={i} className="attach-chip">
+                    {item.kind === 'link' ? '🔗' : '📎'} {item.label}
+                    <button
+                      type="button"
+                      className="chip-x"
+                      title="Remove"
+                      onClick={() => setPending((p) => p.filter((_, j) => j !== i))}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => fileRef.current?.click()}>
+                Upload file
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setPending((p) => [...p, { kind: 'file', file, label: file.name }]);
+                  e.target.value = '';
+                }}
+              />
+              <input
+                placeholder="Add a link (https://…) or a local file path (/Users/…)"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addLink();
+                  }
+                }}
+                style={{ flex: 1, minWidth: 180 }}
+              />
+              <button type="button" disabled={!isValidLink(link.trim())} onClick={addLink}>
+                Add link
+              </button>
+            </div>
+            <span className="field-hint">Paste an image (⌘V / Ctrl+V), upload a file, or add a link.</span>
+          </div>
+
+          <form.Subscribe selector={(s) => s.values.title}>
+            {(title) => (
+              <div className="row" style={{ justifyContent: 'flex-end', marginTop: 16, gap: 8 }}>
+                <button type="button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button type="submit" className="primary" disabled={create.isPending || !title.trim()}>
+                  {create.isPending ? 'Creating…' : 'Create task'}
+                </button>
+              </div>
+            )}
+          </form.Subscribe>
+        </form>
+      </div>
+    </div>
   );
 }

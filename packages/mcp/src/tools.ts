@@ -194,6 +194,32 @@ export function registerTools(server: McpServer, kernel: Kernel): void {
     },
   );
 
+  server.tool(
+    'add_attachment',
+    'Attach a link or a base64-encoded file to a task.',
+    {
+      taskId: z.string().min(1),
+      url: z.string().optional(),
+      filename: z.string().optional(),
+      mime: z.string().optional(),
+      dataBase64: z.string().optional(),
+    },
+    async ({ taskId, url, filename, mime, dataBase64 }) => {
+      try {
+        if (url) {
+          return ok(kernel.attachments.addLink(taskId, { url, filename, mime }));
+        }
+        if (dataBase64) {
+          const data = Buffer.from(dataBase64, 'base64');
+          return ok(kernel.attachments.add(taskId, { filename: filename ?? 'file', mime, data }));
+        }
+        return fail('one of url or dataBase64 is required');
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
   server.resource('queue', 'dume://queue', async (uri) => {
     const todo = kernel.tasks.list({ status: 'todo' });
     const inProgress = kernel.tasks.list({ status: 'in_progress' });

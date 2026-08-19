@@ -1,6 +1,7 @@
 import type {
   AgentDef,
   AppConfig,
+  Attachment,
   Comment,
   Metrics,
   ModelDef,
@@ -56,6 +57,22 @@ export const api = {
     req<TransitionResult | null>('/tasks/next', { method: 'POST', body: JSON.stringify(body) }),
   addComment: (id: string, body: { body: string; author?: string }) =>
     req<Comment>(`/tasks/${id}/comments`, { method: 'POST', body: JSON.stringify(body) }),
+
+  addAttachmentFile: async (id: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    // Do not set Content-Type; the browser adds the multipart boundary.
+    const res = await fetch(`${BASE}/tasks/${id}/attachments`, { method: 'POST', body: form });
+    if (!res.ok) {
+      const b = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(b.error ?? `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()) as Attachment;
+  },
+  addAttachmentLink: (id: string, body: { url: string; filename?: string }) =>
+    req<Attachment>(`/tasks/${id}/attachments`, { method: 'POST', body: JSON.stringify(body) }),
+  attachmentRawUrl: (taskId: string, attId: string) =>
+    `${BASE}/tasks/${taskId}/attachments/${attId}/raw`,
 
   listAgents: () => req<AgentDef[]>('/agents'),
   listModels: () => req<ModelDef[]>('/models'),

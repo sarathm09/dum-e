@@ -6,7 +6,10 @@ import { queryClient } from './query';
 import { router } from './router';
 import { SelectionProvider } from './ui';
 import { useSSE } from './hooks/useSSE';
+import { applyTheme, getStoredTheme } from './theme';
 import './styles.css';
+
+applyTheme(getStoredTheme());
 
 /** Lives inside QueryClientProvider so useSSE can reach the query cache. */
 function App() {

@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS attachments (
   id         TEXT PRIMARY KEY,
   task_id    TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   filename   TEXT NOT NULL,
-  path       TEXT NOT NULL,
+  path       TEXT,
+  url        TEXT,
   mime       TEXT,
   size       INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL

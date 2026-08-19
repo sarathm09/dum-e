@@ -27,7 +27,7 @@ export { TaskService } from './services/task-service.js';
 export type { TransitionResult } from './services/task-service.js';
 export { CommentService } from './services/comment-service.js';
 export { AttachmentService } from './services/attachment-service.js';
-export type { AttachmentInput } from './services/attachment-service.js';
+export type { AttachmentInput, AttachmentLinkInput } from './services/attachment-service.js';
 
 // Utilities
 export { newId, now } from './id.js';

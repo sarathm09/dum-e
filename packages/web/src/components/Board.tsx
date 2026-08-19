@@ -12,6 +12,7 @@ import { STATUSES, TRANSITIONS, type Task } from '../types';
 import { useTasks, useTransition } from '../hooks/queries';
 import { Column } from './Column';
 import { Card } from './Card';
+import { TaskTable } from './TaskTable';
 import { TransitionModal } from './TransitionModal';
 
 interface PendingMove {
@@ -19,11 +20,14 @@ interface PendingMove {
   to: string;
 }
 
+type View = 'board' | 'table';
+
 export function Board({ projectId }: { projectId?: string }) {
   const { data: tasks = [] } = useTasks(projectId ? { projectId } : {});
   const transition = useTransition();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingMove | null>(null);
+  const [view, setView] = useState<View>('board');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -80,15 +84,40 @@ export function Board({ projectId }: { projectId?: string }) {
   }
 
   return (
-    <>
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div className="board">
-          {STATUSES.map((s) => (
-            <Column key={s} status={s} tasks={byStatus[s] ?? []} />
-          ))}
+    <div className="project-view">
+      <div className="view-toolbar">
+        <div className="view-switch" role="tablist" aria-label="View">
+          <button
+            role="tab"
+            aria-selected={view === 'board'}
+            className={view === 'board' ? 'active' : ''}
+            onClick={() => setView('board')}
+          >
+            Board
+          </button>
+          <button
+            role="tab"
+            aria-selected={view === 'table'}
+            className={view === 'table' ? 'active' : ''}
+            onClick={() => setView('table')}
+          >
+            Table
+          </button>
         </div>
-        <DragOverlay>{activeTask ? <Card task={activeTask} /> : null}</DragOverlay>
-      </DndContext>
+      </div>
+
+      {view === 'board' ? (
+        <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div className="board">
+            {STATUSES.map((s) => (
+              <Column key={s} status={s} tasks={byStatus[s] ?? []} />
+            ))}
+          </div>
+          <DragOverlay>{activeTask ? <Card task={activeTask} /> : null}</DragOverlay>
+        </DndContext>
+      ) : (
+        <TaskTable projectId={projectId} />
+      )}
 
       {pending && (
         <TransitionModal
@@ -102,6 +131,6 @@ export function Board({ projectId }: { projectId?: string }) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

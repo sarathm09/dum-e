@@ -86,6 +86,9 @@ export interface Attachment {
   filename: string;
   size: number;
   mime: string | null;
+  /** Non-null for link attachments; null for uploaded files. */
+  url: string | null;
+  path: string | null;
   createdAt: string;
 }
 
@@ -124,10 +127,37 @@ export interface AppConfig {
   ui?: Record<string, unknown>;
 }
 
+export interface StateDuration {
+  status: string;
+  totalMs: number;
+  visits: number;
+  avgMs: number;
+}
+
+export interface TaskStat {
+  id: string;
+  title: string;
+  status: Status;
+  priority: Priority;
+  type: TaskType;
+  createdAt: string;
+  updatedAt: string;
+  ageMs: number;
+  transitions: number;
+  timeInStatus: Record<string, number>;
+  completed: boolean;
+}
+
 export interface Metrics {
   total: number;
+  completed: number;
+  open: number;
+  avgCycleMs: number | null;
+  avgOpenAgeMs: number | null;
   byStatus: Record<string, number>;
   byPriority: Record<string, number>;
   byType: Record<string, number>;
+  stateDurations: StateDuration[];
+  taskStats: TaskStat[];
   recentTransitions: Transition[];
 }
