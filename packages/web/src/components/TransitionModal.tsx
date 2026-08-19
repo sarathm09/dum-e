@@ -32,7 +32,7 @@ export function TransitionModal({
         <textarea
           autoFocus
           rows={4}
-          placeholder="Comment (required) — why this transition?"
+          placeholder="Comment (required): why this transition?"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
         />

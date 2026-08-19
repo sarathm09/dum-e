@@ -29,7 +29,7 @@ export function projectList(): void {
     console.log(
       table(
         ['KEY', 'ID', 'NAME', 'REPO'],
-        projects.map((p) => [p.key, p.id, p.name, p.repo ?? '—']),
+        projects.map((p) => [p.key, p.id, p.name, p.repo ?? 'none']),
       ),
     );
   });

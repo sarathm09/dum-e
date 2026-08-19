@@ -34,8 +34,14 @@ export function TaskTable({ projectId }: { projectId?: string }) {
         cell: (c) => <span style={priorityStyle(c.getValue())}>{c.getValue()}</span>,
       }),
       col.accessor('type', { header: 'Type' }),
-      col.accessor('repo', { header: 'Repo', cell: (c) => c.getValue() ?? '—' }),
-      col.accessor('branch', { header: 'Branch', cell: (c) => c.getValue() ?? '—' }),
+      col.accessor('repo', {
+        header: 'Repo',
+        cell: (c) => c.getValue() ?? <span className="dim">none</span>,
+      }),
+      col.accessor('branch', {
+        header: 'Branch',
+        cell: (c) => c.getValue() ?? <span className="dim">none</span>,
+      }),
       col.accessor('updatedAt', {
         header: 'Updated',
         cell: (c) => new Date(c.getValue()).toLocaleString(),

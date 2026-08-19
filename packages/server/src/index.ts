@@ -25,19 +25,40 @@ export function startServer(opts: StartServerOptions = {}): { stop: () => void }
     console.log(`[dum-e/server] listening on http://${host}:${info.port}`);
   });
 
+  // Node http.Server under @hono/node-server. Long-lived SSE (`/events`)
+  // connections keep server.close()'s callback from ever firing, so on
+  // shutdown we drop open sockets and hard-exit with a short fallback timer.
+  const httpServer = server as unknown as {
+    close: (cb?: () => void) => void;
+    closeAllConnections?: () => void;
+  };
+
+  let shuttingDown = false;
   const shutdown = () => {
+    if (shuttingDown) {
+      // Second Ctrl-C: exit now.
+      process.exit(0);
+    }
+    shuttingDown = true;
     console.log('[dum-e/server] shutting down...');
-    server.close(() => {
+    httpServer.closeAllConnections?.();
+    httpServer.close(() => {
       kernel.close();
       process.exit(0);
     });
+    // Fallback in case a connection refuses to drain.
+    setTimeout(() => {
+      kernel.close();
+      process.exit(0);
+    }, 1000).unref();
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
   return {
     stop: () => {
-      server.close();
+      httpServer.closeAllConnections?.();
+      httpServer.close();
       kernel.close();
     },
   };

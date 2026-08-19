@@ -53,7 +53,8 @@ interface AttachmentRow {
   id: string;
   task_id: string;
   filename: string;
-  path: string;
+  path: string | null;
+  url: string | null;
   mime: string | null;
   size: number;
   created_at: string;
@@ -118,7 +119,8 @@ function toAttachment(r: AttachmentRow): Attachment {
     id: r.id,
     taskId: r.task_id,
     filename: r.filename,
-    path: r.path,
+    path: r.url ? null : r.path,
+    url: r.url ?? null,
     mime: r.mime,
     size: r.size,
     createdAt: r.created_at,
@@ -153,6 +155,21 @@ export class Store {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
     this.db.exec(SCHEMA);
+    this.migrate();
+  }
+
+  /** Idempotent migrations for existing databases created before schema additions. */
+  private migrate(): void {
+    try {
+      const cols = this.db.prepare(`PRAGMA table_info('attachments')`).all() as Array<{
+        name: string;
+      }>;
+      if (!cols.some((c) => c.name === 'url')) {
+        this.db.exec('ALTER TABLE attachments ADD COLUMN url TEXT');
+      }
+    } catch {
+      // best-effort; if this fails the table likely doesn't exist yet or already has the column
+    }
   }
 
   close(): void {
@@ -354,14 +371,15 @@ export class Store {
   insertAttachment(a: Attachment): Attachment {
     this.db
       .prepare(
-        `INSERT INTO attachments (id, task_id, filename, path, mime, size, created_at)
-         VALUES (@id, @task_id, @filename, @path, @mime, @size, @created_at)`,
+        `INSERT INTO attachments (id, task_id, filename, path, url, mime, size, created_at)
+         VALUES (@id, @task_id, @filename, @path, @url, @mime, @size, @created_at)`,
       )
       .run({
         id: a.id,
         task_id: a.taskId,
         filename: a.filename,
-        path: a.path,
+        path: a.path ?? '',
+        url: a.url ?? null,
         mime: a.mime,
         size: a.size,
         created_at: a.createdAt,
@@ -374,6 +392,13 @@ export class Store {
       .prepare('SELECT * FROM attachments WHERE task_id = ? ORDER BY created_at ASC')
       .all(taskId) as AttachmentRow[];
     return rows.map(toAttachment);
+  }
+
+  getAttachment(id: string): Attachment | undefined {
+    const row = this.db.prepare('SELECT * FROM attachments WHERE id = ?').get(id) as
+      | AttachmentRow
+      | undefined;
+    return row ? toAttachment(row) : undefined;
   }
 
   // --- transitions ---

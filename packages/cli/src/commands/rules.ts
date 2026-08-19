@@ -11,7 +11,7 @@ You have access to dum-e, a task manager. Before doing ANY delegated work:
    describing what you changed and how you verified it. Then STOP and wait for the
    human to approve or reject.
 5. If a task is rejected (it returns to \`in_progress\` with \`rejectionFlag\` set and a
-   comment), it is now top priority — address the comment first, then repeat step 4.
+   comment), it is now top priority: address the comment first, then repeat step 4.
 6. Every status change MUST include a comment. Never skip states.
 
 Interfaces (use whichever your runtime supports):

@@ -42,6 +42,14 @@ function useInvalidate() {
   };
 }
 
+export function useCreateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; key?: string; repo?: string }) => api.createProject(body),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+}
+
 export function useCreateTask() {
   const invalidate = useInvalidate();
   return useMutation({
@@ -84,6 +92,17 @@ export function useAddComment() {
     onSuccess: (_data, v) => {
       void qc.invalidateQueries({ queryKey: ['task', v.id] });
     },
+  });
+}
+
+export function useAddAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; file?: File; url?: string; filename?: string }) =>
+      v.file
+        ? api.addAttachmentFile(v.id, v.file)
+        : api.addAttachmentLink(v.id, { url: v.url!, filename: v.filename }),
+    onSuccess: (_data, v) => void qc.invalidateQueries({ queryKey: ['task', v.id] }),
   });
 }
 

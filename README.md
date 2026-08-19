@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="dum-e" width="96" />
+</p>
+
 # dum-e
 
 Named for Tony Stark's clumsy robot arm. A personal, single-user AI task manager that AI agents (Claude, Codex, opencode, any LLM) drive through a defined lifecycle, with you as the approval gate.
